@@ -39,7 +39,6 @@ import java.security.Permission;
 import java.security.ProtectionDomain;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -84,19 +83,19 @@ public class ProfilingSecurityManager extends SecurityManager {
         final StackTraceElement[] stack = t.getStackTrace();
         // Avoid recursion owing to actions in this class itself inducing callbacks
         if (!isRecur(stack)) {
-            buildRules(permission, AccessController.getContext(), t);
+            buildRules(permission, AccessController.getContext());
         }
     }
-    
+
     // -----------------
     @Override
     public void checkPermission(final Permission permission, final Object context) {
-        buildRules(permission, (AccessControlContext) context, null);
+        buildRules(permission, (AccessControlContext) context);
     }
 
     // -----------------
     // With a Permission and an AccessControlContext, we can build and print rules
-    private void buildRules(final Permission permission, final AccessControlContext ctx, Throwable t) {
+    private void buildRules(final Permission permission, final AccessControlContext ctx) {
         try {
             final ProtectionDomain[] protectionDomain = getProtectionDomains(ctx);
             if (null != protectionDomain) {
@@ -104,11 +103,6 @@ public class ProfilingSecurityManager extends SecurityManager {
                     final String grant = formatRule(permission, protectionDomain[i]);
                     if (null != grant && !isCached(grant)) {
                         out.println(grant);
-                        if (t != null) {
-                            final StackTraceElement[] stack = t.getStackTrace();
-                            t.setStackTrace(Arrays.copyOfRange(stack, 1, stack.length));
-                            t.printStackTrace(out);
-                        }
                     }
                 }
             }
@@ -178,7 +172,7 @@ public class ProfilingSecurityManager extends SecurityManager {
             return null;
         }
 
-        // Remove ProfilingSecurityManager.class codebase from output rule consideration 
+        // Remove ProfilingSecurityManager.class codebase from output rule consideration
         if (url.toString().equals(thisCodeSourceURLString)) {
             return null;
         }
