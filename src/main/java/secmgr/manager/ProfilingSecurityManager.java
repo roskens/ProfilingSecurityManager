@@ -86,6 +86,7 @@ public class ProfilingSecurityManager extends SecurityManager {
     // -----------------
     @Override
     public void checkPermission(final Permission permission) {
+        if (permission instanceof java.net.SocketPermission) { return; }
         final Throwable t = new Throwable("Profiler stack probe");
         final StackTraceElement[] stack = t.getStackTrace();
         // Avoid recursion owing to actions in this class itself inducing callbacks
@@ -97,6 +98,7 @@ public class ProfilingSecurityManager extends SecurityManager {
     // -----------------
     @Override
     public void checkPermission(final Permission permission, final Object context) {
+        if (permission instanceof java.net.SocketPermission) { return; }
         buildRules(permission, (AccessControlContext) context);
     }
 
