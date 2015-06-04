@@ -25,9 +25,9 @@
  */
 package secmgr.manager;
 
-import static java.lang.System.err;
-import static java.lang.System.out;
-
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 
 import java.net.URL;
@@ -68,12 +68,19 @@ public class ProfilingSecurityManager extends SecurityManager {
     private final String thisCodeSourceURLString;
     private final String psmMsg = "ProfilingSecurityManager";
     private final List<String> cacheList = new ArrayList<>();
+    private final PrintStream out;
 
     // ---------------------------------
-    public ProfilingSecurityManager() {
+    public ProfilingSecurityManager() throws FileNotFoundException {
         thisClassName = this.getClass().getName();
         CodeSource thisCodeSource = this.getClass().getProtectionDomain().getCodeSource();
         thisCodeSourceURLString = thisCodeSource.getLocation().toString();
+        String logFile = System.getProperty("secmgr.manager.logfile");
+        if (logFile != null && !logFile.trim().isEmpty()) {
+            out = new PrintStream(new File(logFile));
+        } else {
+            out = System.out;
+        }
     }
 
     // -----------------
@@ -107,7 +114,7 @@ public class ProfilingSecurityManager extends SecurityManager {
                 }
             }
         } catch (IllegalStateException e) {
-            e.printStackTrace();
+            e.printStackTrace(out);
         }
     }
 
@@ -154,7 +161,7 @@ public class ProfilingSecurityManager extends SecurityManager {
             }
 
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            e.printStackTrace(out);
         } finally {
             return pda;
         }
