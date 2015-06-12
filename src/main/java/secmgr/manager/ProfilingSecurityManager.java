@@ -39,6 +39,7 @@ import java.security.Permission;
 import java.security.ProtectionDomain;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -68,6 +69,7 @@ public class ProfilingSecurityManager extends SecurityManager {
     private final String thisCodeSourceURLString;
     private final String psmMsg = "ProfilingSecurityManager";
     private final List<String> cacheList = new ArrayList<>();
+    private final List<String> permList = new ArrayList<>();
     private final PrintStream out;
 
     // ---------------------------------
@@ -75,18 +77,22 @@ public class ProfilingSecurityManager extends SecurityManager {
         thisClassName = this.getClass().getName();
         CodeSource thisCodeSource = this.getClass().getProtectionDomain().getCodeSource();
         thisCodeSourceURLString = thisCodeSource.getLocation().toString();
-        String logFile = System.getProperty("secmgr.manager.logfile");
+        final String logFile = System.getProperty("secmgr.manager.logfile");
         if (logFile != null && !logFile.trim().isEmpty()) {
             out = new PrintStream(new File(logFile));
         } else {
             out = System.out;
+        }
+        final String permissionsToSkip = System.getProperty("secmgr.manager.skip");
+        if (permissionsToSkip != null) {
+            permList.addAll(Arrays.asList(permissionsToSkip.trim().split("\\s*,\\s*")));
         }
     }
 
     // -----------------
     @Override
     public void checkPermission(final Permission permission) {
-        if (permission instanceof java.net.SocketPermission) { return; }
+        if (skipPermission(permission)) { return; }
         final Throwable t = new Throwable("Profiler stack probe");
         final StackTraceElement[] stack = t.getStackTrace();
         // Avoid recursion owing to actions in this class itself inducing callbacks
@@ -98,8 +104,15 @@ public class ProfilingSecurityManager extends SecurityManager {
     // -----------------
     @Override
     public void checkPermission(final Permission permission, final Object context) {
-        if (permission instanceof java.net.SocketPermission) { return; }
+        if (skipPermission(permission)) { return; }
         buildRules(permission, (AccessControlContext) context);
+    }
+
+    private boolean skipPermission(final Permission permission) {
+        if (!permList.isEmpty()) {
+            return permList.contains(permission.getClass().getName());
+        }
+        return false;
     }
 
     // -----------------
